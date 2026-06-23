@@ -1,5 +1,4 @@
 import os
-import re
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -178,13 +177,30 @@ class BatchRenamerApp:
         self._refresh_tree()
 
     def _sanitize(self, text):
-        forbidden = ' #%&\\\"<>?$+,，/*:|'
-        result = ''.join('_' if c in forbidden else c for c in text)
-        while result.startswith('/') or result.startswith('\\'):
+        result = []
+        for ch in text:
+            cp = ord(ch)
+            if self._is_forbidden(cp):
+                result.append("_")
+            else:
+                result.append(ch)
+        result = "".join(result)
+        while result.startswith("/") or result.startswith("\\"):
             result = result[1:]
         if not result:
-            result = '_'
+            result = "_"
         return result
+
+    def _is_forbidden(self, cp):
+        if cp in (0x20, 0xA0, 0x3000):
+            return True
+        if cp in (0x09, 0x0A, 0x0B, 0x0C, 0x0D):
+            return True
+        if cp in (0x23, 0x25, 0x26, 0x5C, 0x22, 0x3C, 0x3E, 0x3F, 0x24, 0x2B, 0x2C, 0x2F, 0x2A, 0x3A, 0x7C):
+            return True
+        if cp == 0xFF0C:
+            return True
+        return False
 
     def _refresh_tree(self):
         self.tree.delete(*self.tree.get_children())

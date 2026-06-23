@@ -18,7 +18,7 @@ struct PrefixInputView: View {
                 .font(.headline)
 
             VStack(alignment: .leading, spacing: 4) {
-                Text("前缀将添加到每个文件名前，例如 \"01.jpg\" → \"\(prefix)01.jpg\"")
+                Text("前缀将添加到每个文件名前，例如 \"01.jpg\" → \"\(sanitize(prefix))01.jpg\"")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 TextField("请输入前缀", text: $prefix)
@@ -247,22 +247,6 @@ struct ContentView: View {
         }
     }
 
-    private func sanitize(_ text: String) -> String {
-        let forbidden: Set<Character> = [
-            " ", "#", "%", "&", "\\", "\"", "<", ">", "?", "$", "+", ",", "，",
-            "/", "*", ":", "|"
-        ]
-        var result = String(text.unicodeScalars.compactMap { scalar -> Character? in
-            let ch = Character(scalar)
-            return forbidden.contains(ch) ? "_" : ch
-        })
-        while result.hasPrefix("/") || result.hasPrefix("\\") {
-            result.removeFirst()
-        }
-        if result.isEmpty { result = "_" }
-        return result
-    }
-
     private func performRename() {
         guard let path = selectedFolder else { return }
         isProcessing = true
@@ -294,4 +278,40 @@ struct ContentView: View {
 
         scanFiles(at: path)
     }
+}
+
+func sanitize(_ text: String) -> String {
+    var result = ""
+    for scalar in text.unicodeScalars {
+        let ch = Character(scalar)
+        if isForbidden(scalar) {
+            result.append("_")
+        } else {
+            result.append(ch)
+        }
+    }
+    while result.hasPrefix("/") || result.hasPrefix("\\") {
+        result.removeFirst()
+    }
+    if result.isEmpty { result = "_" }
+    return result
+}
+
+func isForbidden(_ scalar: Unicode.Scalar) -> Bool {
+    let value = scalar.value
+    if value == 0x20 || value == 0xA0 || value == 0x3000 {
+        return true
+    }
+    if value == 0x09 || value == 0x0A || value == 0x0B || value == 0x0C || value == 0x0D {
+        return true
+    }
+    if value == 0x23 || value == 0x25 || value == 0x26 || value == 0x5C || value == 0x22
+        || value == 0x3C || value == 0x3E || value == 0x3F || value == 0x24 || value == 0x2B
+        || value == 0x2C || value == 0x2F || value == 0x2A || value == 0x3A || value == 0x7C {
+        return true
+    }
+    if value == 0xFF0C {
+        return true
+    }
+    return false
 }
