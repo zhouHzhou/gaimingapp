@@ -239,9 +239,28 @@ struct ContentView: View {
 
             let ext = (entry as NSString).pathExtension
             let nameWithoutExt = (entry as NSString).deletingPathExtension
-            let newName = namePrefix + nameWithoutExt + (ext.isEmpty ? "" : "." + ext)
+            let cleanedPrefix = sanitize(namePrefix)
+            let cleanedName = sanitize(nameWithoutExt)
+            let cleanedExt = sanitize(ext)
+            let newName = cleanedPrefix + cleanedName + (cleanedExt.isEmpty ? "" : "." + cleanedExt)
             fileItems.append(FileItem(originalName: entry, newName: newName))
         }
+    }
+
+    private func sanitize(_ text: String) -> String {
+        let forbidden: Set<Character> = [
+            " ", "#", "%", "&", "\\", "\"", "<", ">", "?", "$", "+", ",", "，",
+            "/", "*", ":", "|"
+        ]
+        var result = String(text.unicodeScalars.compactMap { scalar -> Character? in
+            let ch = Character(scalar)
+            return forbidden.contains(ch) ? "_" : ch
+        })
+        while result.hasPrefix("/") || result.hasPrefix("\\") {
+            result.removeFirst()
+        }
+        if result.isEmpty { result = "_" }
+        return result
     }
 
     private func performRename() {

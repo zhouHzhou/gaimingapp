@@ -1,4 +1,5 @@
 import os
+import re
 import tkinter as tk
 from tkinter import filedialog, messagebox, ttk
 
@@ -168,10 +169,22 @@ class BatchRenamerApp:
             if not os.path.isfile(full_path):
                 continue
             name, ext = os.path.splitext(entry)
-            new_name = f"{prefix}{name}{ext}"
+            cleaned_prefix = self._sanitize(prefix)
+            cleaned_name = self._sanitize(name)
+            cleaned_ext = self._sanitize(ext)
+            new_name = f"{cleaned_prefix}{cleaned_name}{cleaned_ext}"
             self.file_list.append((entry, new_name))
 
         self._refresh_tree()
+
+    def _sanitize(self, text):
+        forbidden = ' #%&\\\"<>?$+,，/*:|'
+        result = ''.join('_' if c in forbidden else c for c in text)
+        while result.startswith('/') or result.startswith('\\'):
+            result = result[1:]
+        if not result:
+            result = '_'
+        return result
 
     def _refresh_tree(self):
         self.tree.delete(*self.tree.get_children())
